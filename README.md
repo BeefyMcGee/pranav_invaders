@@ -1,6 +1,6 @@
 # pranav_invaders
 
-               BASIC CONTROLS
+BASIC CONTROLS
 
 w / up arrow - move up
 s / down arrow - move down
@@ -8,7 +8,7 @@ a & d - change difficulty
 Enter - continue
 
 
-              HOW TO PLAY
+HOW TO PLAY
 
 You goal is to use w & s to navigate the green square
 around the enemies. Powerups may aid you along the 
@@ -16,7 +16,7 @@ way. Taking a hit will lose you hearts, of which you
 have 10.
 
 
-              ENEMY TYPES
+ENEMY TYPES
 
 Red - Basic - A simple enemy that will move directly
 forward.
@@ -31,7 +31,7 @@ Yellow - Gunner - An enemy that shoots fast moving
 bullets directly ahead of it.
 
 
-                 POWERUPS
+POWERUPS
 
 Pink - Health Boost - Regains 2 hearts
 Blue - Shield - Makes you invulnerable for a certain
