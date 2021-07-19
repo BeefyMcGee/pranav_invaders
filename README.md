@@ -7,9 +7,9 @@ s / down arrow - move down
 a & d - change difficulty
 Enter - continue
 
-========================================
+==========================================
               HOW TO PLAY
-========================================
+==========================================
 You goal is to use w & s to navigate the green square
 around the enemies. Powerups may aid you along the 
 way. Taking a hit will lose you hearts, of which you
