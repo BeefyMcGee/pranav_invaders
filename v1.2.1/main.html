@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width" />
+  <title>Gunship</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas></canvas>
+  <script>
+    canvas = document.querySelector("canvas");
+    ctx = canvas.getContext("2d");
+    width = canvas.width = window.innerWidth
+    height = canvas.height = window.innerHeight
+
+    var bullets = [];
+    var bulletCooldown = 0;
+    var invFrames = 0;
+    var powFrames = 0;
+    var shieldFrames = 0;
+    var alive = true;
+    var score = 0;
+    var begun = false;
+    var difficulties = [['Oliver',200],
+                  ['Monke',100],
+                  ['Normal',20],
+                  ['Hard',10],
+                  ['Impossible',1]];
+    var difficultyNum = 2;
+    var spawnChance = 200;
+    var backgroundFrame = 0;
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    class Gunship {
+      constructor(x,y,velY,accY,color,inv,getPowerup,shield) {
+        this.x = x;
+        this.y = y;
+        this.accY = accY;
+        this.velY = velY;
+        this.color = color;
+        this.inv = inv;
+        this.getPowerup = getPowerup;
+        this.shield = shield;
+      };
+      draw = () => {
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.rect(this.x,this.y,20,20);
+        ctx.fill();
+        ctx.closePath();
+
+        this.update();
+      };
+      update = () => {
+        if (this.inv) {
+          invFrames++;
+        };
+
+        if (this.getPowerup) {
+          powFrames++;
+        };
+
+        if (this.shield) {
+          shieldFrames++;
+        };
+
+        if (invFrames == 10) {
+          this.inv = false;
+          invFrames = 0;
+        };
+
+        if (powFrames == 10) {
+          this.getPowerup = false;
+          powFrames = 0;
+        };
+
+        if (shieldFrames == 570) {
+          this.shield = false;
+          shieldFrames = 0;
+        };
+
+        if (keysPressed['w'] && this.y > 100) {
+          this.velY = -3;
+        } else if (keysPressed['s'] && this.y < height - 100) {
+          this.velY = 3;
+        } else if (!keysPressed['w'] && !keysPressed['s'] && this.velY < 0){
+          this.accY = 0.15/(difficultyNum+1);
+        } else if (!keysPressed['w'] && !keysPressed['s'] && this.velY > 0){
+          this.accY = -0.15/(difficultyNum+1);
+        };
+
+        if (this.y < 50) {
+          this.y = 50;
+          this.velY = 0;
+          this.accY = 0;
+        } else if (this.y > height - 100) {
+          this.y = height - 100;
+          this.velY = 0;
+          this.accY = 0;
+        };
+
+        if (this.velY == 0) {
+          this.accY = 0;
+        };
+
+        if (this.inv) {
+          this.color = 'white';
+          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          ctx.fillRect(0,0,width,height);
+        } else {
+          this.color = 'green';
+        };
+
+        if (this.getPowerup) {
+          this.color = 'rgba(200,255,200,1)';
+          ctx.fillStyle = 'rgba(200,255,200,0.25)';
+          ctx.fillRect(0,0,width,height);
+        } else {
+          this.color = 'green';
+        };
+
+        if (this.shield) {
+          this.color = 'rgba(128, 204, 255,1)';
+        } else {
+          this.color = 'green';
+        };
+
+        this.velY = this.velY + this.accY;
+        this.y = this.y + this.velY;
+      };
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    class Enemy {
+      constructor(x,y,speed,type) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+        this.type = type;
+      };
+      draw = () => {
+        if (this.type == 10) {
+          this.redShell();
+        } else if (this.type == 11) {
+          this.giant();
+        } else if (this.type == 12) {
+          this.wall();
+        } else if (this.type == 13) {
+          this.gun();
+        } else if (this.type == 14 || this.type == 9 || this.type == 8) {
+          this.sonic();
+        } else {
+          this.basic();
+        };
+      };
+      collisionDetection = () => {
+        if (this.x >= ship.x - 20 && this.x <= ship.x + 20 && this.y >= ship.y - 19 && this.y <= ship.y + 20) {
+          ship.inv = true;
+          this.x = -100;
+          if (!ship.shield) {
+            health.rem-= 10;
+          } if (ship.shield) {
+            score += 100;
+          };
+        };
+      };
+
+      basic = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'red';
+        ctx.rect(this.x,this.y,20,20);
+        ctx.fill();
+        ctx.closePath();
+
+        this.collisionDetection();
+
+        this.x = this.x - this.speed;
+      };
+
+      giant = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'red';
+        ctx.rect(this.x,this.y,40,40);
+        ctx.fill();
+        ctx.closePath();
+
+        if (this.x >= ship.x - 40 && this.x <= ship.x + 20 && this.y >= ship.y - 40 && this.y <= ship.y + 20) {
+          ship.inv = true;
+          this.x = -100;
+          if (!ship.shield) {
+            health.rem-= 20;
+          } if (ship.shield) {
+            score += 100;
+          };
+        };
+
+        this.x = this.x - this.speed;
+      };
+
+      redShell = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'orange';
+        ctx.rect(this.x,this.y,20,20);
+        ctx.fill();
+        ctx.closePath();
+
+        this.collisionDetection();
+
+        if (this.y < ship.y+10) {
+          this.y = this.y + 1;
+          this.x = this.x - this.speed;
+        } else {
+          this.y = this.y - 1;
+          this.x = this.x - this.speed;
+        };
+      };
+
+      wall = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'magenta';
+        ctx.rect(this.x,this.y,20,200);
+        ctx.fill();
+        ctx.closePath();
+
+        if (this.x >= ship.x - 20 && this.x <= ship.x + 20 && this.y >= ship.y - 200 && this.y <= ship.y + 20) {
+          ship.inv = true;
+          this.x = -100;
+          if (!ship.shield) {
+            health.rem-= 10;
+          } if (ship.shield) {
+            score += 100;
+          };
+        };
+
+        this.x = this.x - 3;
+      };
+
+      gun = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'yellow';
+        ctx.rect(this.x,this.y,20,20);
+        ctx.fill();
+        ctx.closePath();
+
+        this.collisionDetection();
+
+        if (bulletCooldown == 0) {
+          let bullet = new Bullet (this.x-70,this.y+10);
+          bullets.push(bullet);
+          bulletCooldown = 40;
+        } else {
+          bulletCooldown--;
+        };
+
+        this.x = this.x - this.speed;
+      };
+
+      sonic = () => {
+        for (let i = 0; i < 51; i++) {
+          ctx.beginPath();
+          ctx.fillStyle = 'rgba(0,0,+'+i*5+',1)';
+          ctx.rect(this.x+(102-i*2),this.y+10-(i*0.39)/2,20,i*0.39);
+          ctx.fill();
+          ctx.closePath();
+        };
+        ctx.beginPath();
+        ctx.fillStyle = 'blue';
+        ctx.rect(this.x,this.y,20,20);
+        ctx.fill();
+        ctx.closePath();
+
+        this.collisionDetection();
+
+        this.x = this.x - 15;
+      };
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    class HealthBar {
+      constructor(x,y,total,rem) {
+        this.x = x;
+        this.y = y;
+        this.total = total;
+        this.rem = rem;
+      };
+      draw = () => {
+        ctx.beginPath();
+        ctx.fillStyle = '#dedede';
+        ctx.rect(this.x-2,this.y-2,this.total*2+4,24);
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.beginPath();
+        ctx.fillStyle = 'red';
+        ctx.rect(this.x,this.y,this.rem*2,20);
+        ctx.fill();
+        ctx.closePath();
+
+        this.update();
+      };
+      update = () => {
+        if (this.rem <= 0) {
+          ctx.fillStyle = 'black';
+          ctx.fillRect(0,0,width,height);
+          alive = false;
+        };
+      };
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    class Text {
+      constructor(text,x,y,color,size) {
+        this.x = x;
+        this.y = y;
+        this.text = text;
+        this.color = color;
+        this.size = size;
+      };
+      draw = () => {
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.font = this.size + 'px sans-serif';
+        ctx.fillText(this.text,this.x,this.y);
+        ctx.closePath();
+      };
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    class Bullet {
+      constructor(x,y) {
+        this.x = x;
+        this.y = y;
+      };
+      draw = () => {
+        for (let i = 0; i < 51; i++) {
+          ctx.beginPath();
+          ctx.fillStyle = 'rgba('+i*5+','+i*5+','+i*5+',1';
+          ctx.rect(this.x+(51-i),this.y,20,5);
+          ctx.fill();
+          ctx.closePath();
+        };
+        ctx.beginPath();
+        ctx.fillStyle = 'white';
+        ctx.rect(this.x,this.y,20,5);
+        ctx.fill();
+        ctx.closePath();
+
+        this.update();
+      };
+      detectHit = () => {
+        if (this.x >= ship.x - 20 && this.x <= ship.x + 20 && this.y >= ship.y - 20 && this.y <= ship.y + 20) {
+          ship.inv = true;
+          this.x = -100;
+          if (!ship.shield) {
+            health.rem-= 10;
+          };
+        };
+      };
+      update = () => {
+        this.detectHit();
+
+        this.x = this.x - 8;
+      };
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    class Powerup {
+      constructor(x,y,type) {
+        this.x = x;
+        this.y = y;
+        this.type = type;
+      };
+      draw = () => {
+        if (this.type == 1) {
+          this.health();
+        };
+        if (this.type == 2) {
+          this.shield();
+        };
+      };
+      collisionDetection = () => {
+        if (this.x >= ship.x - 10 && this.x <= ship.x + 10 && this.y >= ship.y - 10 && this.y <= ship.y + 10) {
+          ship.getPowerup = true;
+          this.x = -100;
+          return true;
+        };
+      };
+      health = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(255, 128, 213,1)';
+        ctx.arc(this.x,this.y,10,0,2*Math.PI);
+        ctx.fill();
+        ctx.closePath();
+
+        if (this.x >= ship.x - 20 && this.x <= ship.x + 20 && this.y >= ship.y - 20 && this.y <= ship.y + 20) {
+          ship.getPowerup = true;
+          this.x = -100;
+          if (health.rem == 90) {
+            health.rem += 10;
+          } else if (health.rem < 90) {
+            health.rem += 20;
+          };
+        };
+
+        this.x = this.x - 5;
+      };
+      shield = () => {
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(128, 204, 255,1)';
+        ctx.arc(this.x,this.y,10,0,2*Math.PI);
+        ctx.fill();
+        ctx.closePath();
+
+        if (this.x >= ship.x - 20 && this.x <= ship.x + 20 && this.y >= ship.y - 20 && this.y <= ship.y + 20) {
+          ship.getPowerup = true;
+          this.x = -100;
+          ship.shield = true;
+        };
+
+        this.collisionDetection();
+        this.x = this.x - 5;
+      };
+    };
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    function random(min, max) {
+      const num = Math.floor(Math.random() * (max - min + 1)) + min;
+      return num;
+    };
+
+    var enemies = [];
+    var powerups = [];
+
+    function animate() {
+      var bgGradient = ctx.createLinearGradient(random(0,width),random(0,height), random(0,width),random(0,height));
+      backgroundFrame++;
+      if (backgroundFrame % 1 == 0) {
+        var bgGradient = ctx.createLinearGradient(random(0,width),random(0,height), random(0,width),random(0,height));
+        bgGradient.addColorStop(0, "black");
+        bgGradient.addColorStop(1, '#110021');
+      };
+
+      ctx.fillStyle = bgGradient;
+       ctx.fillRect(0,0,width,height);
+
+      console.log(ship.shield)
+
+      if (alive && begun) {
+        ship.draw();
+
+        if (random(1,difficulties[difficultyNum][1]) == 1) {
+          let enemy = new Enemy (width+30,random(30,height-50),random(1,5),random(1,14));
+          enemies.push(enemy);
+        };
+        for (let i = 0; i < enemies.length; i++) {
+          enemies[i].draw();
+          if (enemies[i].x < -30) {
+            enemies.splice(i,1);
+          };
+        };
+
+        if (random(1,250) == 4) {
+          let powerup = new Powerup (width-100,random(50,height-50),random(1,2));
+          powerups.push(powerup);
+        };
+        for (let i = 0; i < powerups.length; i++) {
+          powerups[i].draw();
+          if (powerups[i].x < -30) {
+            powerups.splice(i,1);
+          };
+        };
+
+        for (let i = 0; i < bullets.length; i++) {
+          bullets[i].draw();
+          if (bullets[i].x < -30) {
+            bullets.splice(i,1);
+          };
+        };
+
+        health.draw();
+        score = score + 1;
+        scoreText = new Text ('Score: ' + score, 30,30,'white','20');
+        scoreText.draw();
+      } else if (!alive && begun) {
+        gameOver.draw();
+
+        let endScoreText = new Text ('Final score: ' + score,width/2 - 80,height/2+40,'white','20');
+        endScoreText.draw();
+        endEnter.draw();
+        let difficultyText = new Text ('Difficulty - < '+ difficulties[difficultyNum][0] +' >', 30, 30, 'white','20');
+        difficultyText.draw();
+      } else {
+        welcome.draw();
+        enter.draw();
+        let difficultyText = new Text ('Difficulty - < '+ difficulties[difficultyNum][0] +' >', 30, 30, 'white','20');
+        difficultyText.draw();
+      };
+
+       requestAnimationFrame(animate);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    var keysPressed = {
+      "w": false,
+      "s": false,
+    }
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'w' || event.key === "ArrowUp") {
+        keysPressed['w'] = true;	
+      } else if (event.key === 's' || event.key === "ArrowDown") {
+        keysPressed['s'] = true;
+      } else if (event.keyCode === 13) {
+        if (!begun) {
+          begun = true;
+        } else if (!alive){
+          alive = true;
+          health.rem = 100;
+          score = 0;
+          enemies = [];
+          powerups = [];
+          bullets = [];
+          ship.y = height/2 - 25;
+        };
+      } else if (event.key === 'a') {
+        if (!begun || !alive) {
+          difficultyNum -= 1;
+          if (difficultyNum == -1) {
+            difficultyNum = 4;
+          };
+        };
+      } else if (event.key === 'd') {
+        if (!begun || !alive) {
+          difficultyNum += 1;
+          if (difficultyNum == 5) {
+            difficultyNum = 0;
+          };
+        };
+      };
+    });
+
+    document.addEventListener('keyup', function(event) {
+      if (event.key === 'w' || event.key === "ArrowUp") {
+        keysPressed['w'] = false;	
+      } else if (event.key === 's' || event.key === "ArrowDown") {
+        keysPressed['s'] = false;
+      };
+    });
+
+    ///////////////////////////////////////////////////////////////////////////
+
+    let ship = new Gunship (100,height/2 - 25,0,0,'green');
+
+    let health = new HealthBar (width - 230,15,100,100);
+
+    let gameOver = new Text ('GAME OVER',width/2-100,height/2,'red','30');
+    let scoreText = new Text ('Score: ' + score, 30,30,'white','20');
+    let endEnter = new Text ('Press [Enter] to restart',width/2-110,height/2+70,'white','20');
+
+    let welcome = new Text ('WELCOME TO PRANAV\'S INVADERS',width/2-350,height/2,'green','40');
+    let enter = new Text ('Press [Enter] to begin',width/2-110,height/2+60,'white','20');
+
+    ship.inv = false;
+    ship.getPowerup = false;
+    ship.shield = false;
+
+    animate();
+</script>
+</body>
+</html>
